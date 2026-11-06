@@ -1,0 +1,312 @@
+<!doctype html><html lang="el"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Θέρμανση Κατοικιών</title><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#146b60"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="./icon.svg"><style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;color:#172c30;background:#f4f7f6}*{box-sizing:border-box}body{margin:0}.wrap{max-width:960px;margin:auto;padding:18px}h1{font-size:1.65rem;margin:0 0 8px}h2{font-size:1.15rem;margin:0 0 14px}.muted{color:#52676b;font-size:.92rem;line-height:1.55}.card{background:white;border:1px solid #dbe5e2;border-radius:15px;padding:18px;margin:15px 0;box-shadow:0 2px 8px #15332b08}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:5px;font-size:.9rem;font-weight:650}input,select{width:100%;font:inherit;border:1px solid #b7c8c5;border-radius:9px;padding:11px;background:white;color:#15292a}input:focus,select:focus{outline:2px solid #208778}button{font:inherit;border:0;border-radius:9px;background:#146b60;color:white;padding:11px 14px;cursor:pointer;font-weight:650}button.secondary{background:#e5f0ed;color:#124c46}button.danger{background:#a53d3d}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.stat{background:#eef6f3;padding:12px;border-radius:10px}.stat strong{display:block;font-size:1.35rem;margin-top:4px}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.89rem;min-width:720px}th,td{padding:9px;text-align:left;border-bottom:1px solid #e1e8e6}th{background:#eef4f2}small{font-weight:400}.notice{border-left:4px solid #d19b37;background:#fff8e9;padding:10px 13px;border-radius:6px;margin-top:10px}.ok{color:#086047;font-weight:700}.error{color:#a32a2a;font-weight:700}.hide{display:none}footer{padding:15px 0 30px}.compact{font-size:.87rem}#result{margin-top:14px}.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:600px){.wrap{padding:12px 12px 95px}.card{padding:15px;margin:12px 0;border-radius:16px}.grid{grid-template-columns:1fr 1fr;gap:9px}.grid>.field{grid-column:span 2}.grid>.stat{min-width:0;font-size:.84rem}.stat strong{font-size:1.16rem;overflow-wrap:anywhere}.actions button{flex:1 1 100%;min-height:48px}input,select{font-size:16px;min-height:48px}h1{font-size:1.45rem}.tablewrap{overflow-x:auto}#mobileNav{display:flex}body{padding-bottom:54px}}@media(min-width:601px){#mobileNav{display:none}}#mobileNav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #cbdad5;padding:7px 6px calc(7px + env(safe-area-inset-bottom));z-index:20;gap:5px;justify-content:space-around}#mobileNav a{flex:1;text-align:center;font-size:.78rem;text-decoration:none;color:#146b60;font-weight:700;padding:9px 3px;border-radius:9px;background:#eef6f3}html{scroll-behavior:smooth}section{scroll-margin-top:12px}
+.quick-links{display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0}.quick-links a{color:#146b60;font-weight:650;padding:6px 0}summary{cursor:pointer;font-weight:650;padding:6px 0}.scope-title{margin-top:20px}
+</style></head><body><nav id="mobileNav"><a href="#new-entry">Μέτρηση</a><a href="#summary">Σύνολα</a><a href="#electric">Ρεύμα</a><a href="#backup">Αρχείο</a></nav><main class="wrap"><h1>Θέρμανση Κατοικιών</h1><p class="muted">Εφαρμογή κινητού · Δύο κατοικίες · Μηνιαία ή άλλη περίοδος · Καταχώριση κιλών ή τσουβαλιών και ωρομετρητών · Λειτουργεί χωρίς σύνδεση μετά την πρώτη εγκατάσταση</p>
+<nav class="quick-links" aria-label="Ενότητες εφαρμογής"><a href="#new-entry">Νέα μέτρηση</a><a href="#summary">Σύνολα</a><a href="#purchaseLedger">Αγορές</a><a href="#electric">Ρεύμα</a><a href="#cloudSync">Συγχρονισμός</a></nav>
+<section class="card" id="cloudSync"><h2>Συγχρονισμός συσκευών</h2>
+<p>Συνδέσου με τον ίδιο λογαριασμό Google στο κινητό και στον υπολογιστή.</p>
+<div class="actions"><button id="syncLogin" disabled>Σύνδεση Google</button>
+<button id="syncLogout" class="secondary" hidden>Αποσύνδεση</button>
+<button id="syncRetry" class="secondary" hidden>Επανάληψη</button>
+<button id="syncDownload" class="secondary" hidden>Λήψη κοινών καταχωρίσεων</button>
+<button id="syncUpload" class="secondary" hidden>Αποστολή καταχωρίσεων συσκευής</button></div>
+<p id="syncStatus" role="status" aria-live="polite">Φόρτωση συγχρονισμού…</p></section>
+<section class="card" id="new-entry"><h2>Νέα καταγραφή</h2><p id="previousReading" class="muted"></p><div class="grid"><label class="field">Επιθυμητό διάστημα<select id="interval"><option value="month">Κάθε μήνα</option><option value="day">Κάθε 24 ώρες</option><option value="two">Κάθε 48 ώρες</option><option value="three">Κάθε 72 ώρες</option><option value="week">Κάθε εβδομάδα</option><option value="fortnight">Κάθε 15 ημέρες</option><option value="season">Όλη η σεζόν</option><option value="custom">Ελεύθερο διάστημα</option></select></label><label class="field">Ημερομηνία και ώρα νέας μέτρησης<input id="stamp" type="datetime-local"><small>Συμπλήρωσέ τις όταν διαβάσεις τους ωρομετρητές.</small></label></div><p class="muted">Γράψε τις ενδείξεις όπως φαίνονται στους δύο ωρομετρητές. Η εφαρμογή αφαιρεί τις προηγούμενες ενδείξεις και υπολογίζει τις ώρες κάθε κατοικίας.</p><div class="grid"><label class="field">Ωρομετρητής πάνω κατοικίας, συνολικές ώρες<input id="upperMeter" type="text" inputmode="decimal" placeholder="π.χ. 1250,5"></label><label class="field">Ωρομετρητής κάτω κατοικίας, συνολικές ώρες<input id="lowerMeter" type="text" inputmode="decimal" placeholder="π.χ. 980,25"></label></div><div id="firstInfo" class="notice">Πρώτη χρήση: γέμισε το σιλό μέχρι ένα σταθερό σημάδι και αποθήκευσε την αρχική μέτρηση των ωρομετρητών. Δεν χρειάζεται να καταχωρίσεις τσουβάλια στην πρώτη μέτρηση. Στο τέλος κάθε περιόδου συμπλήρωσε μέχρι το ίδιο σημάδι και καταχώρισε τα κιλά της περιόδου ή το ισοδύναμο σε τσουβάλια.</div><div id="consumeSection" class="hide">
+<div class="notice"><strong>Συμπλήρωση και απόθεμα σιλό</strong>
+<ol><li>Σημείωσε την ώρα και τις ενδείξεις και των δύο ωρομετρητών τη στιγμή της συμπλήρωσης.</li>
+<li>Άθροισε μόνο τις συμπληρώσεις από την προηγούμενη καταμέτρηση. Καταχώρισε όσα κιλά ή τσουβάλια έριξες, μαζί με τη σημερινή συμπλήρωση.</li>
+<li>Αν η στάθμη άλλαξε, γράψε πόσα περίπου τσουβάλια απομένουν στο σιλό. Η εφαρμογή υπολογίζει προηγούμενο απόθεμα + συμπλήρωση − νέο απόθεμα.</li></ol>
+<p>Αν από τη μία καταμέτρηση έως την άλλη έριξες 40 kg και έφτασες ξανά στο ίδιο σημάδι, η κατανάλωση είναι 40 kg. Οι ώρες κάθε σπιτιού προκύπτουν από τη διαφορά των ενδείξεών του.</p><p id="stockReference"></p></div>
+<div class="grid"><label class="field">Καθαρά κιλά συμπλήρωσης της περιόδου<input id="usedKg" type="number" min="0" step="any" placeholder="π.χ. 40"><small>Γράψε τα κιλά που μπήκαν στο σιλό. Τυχόν περίσσευμα έξω από το σιλό δεν μετρά.</small></label>
+<label class="field">Ισοδύναμα τσουβάλια των 30 kg (εκτίμηση)<input id="usedBags" type="number" min="0" step="any" placeholder="π.χ. 1,33"><small>Αν τα τσουβάλια έχουν διαφορετικό βάρος, χρησιμοποίησε τα ζυγισμένα κιλά.</small></label>
+<label class="field">Απόθεμα τώρα, σε ισοδύναμα τσουβάλια<input id="stockBags" type="text" inputmode="decimal" placeholder="π.χ. 5,5"><small>Προαιρετικό. Αν η στάθμη έμεινε ίδια, άφησέ το κενό. Χρησιμοποίησε δεκαδικό για μέρος τσουβαλιού.</small></label><label class="field">Σημείωση (προαιρετική)<input id="notes" placeholder="π.χ. Συμπλήρωση μέχρι το σημάδι"></label></div></div><div class="actions"><button id="calculate">Υπολογισμός</button><button id="saveEntry" class="secondary">Αποθήκευση καταγραφής</button></div><div id="message" aria-live="polite"></div><div id="result" class="hide"></div></section>
+<section class="card" id="summary"><h2>Μηνιαία κατανάλωση και συνολικά αποτελέσματα</h2><p class="muted">Το φίλτρο δείχνει τις καταγραφές με ημερομηνία λήξης μέσα στο επιλεγμένο διάστημα. Κάθε περίοδος εμφανίζεται ολόκληρη. Για ακριβές σύνολο μήνα, μέτρα στην αλλαγή του μήνα.</p><label class="field">Επιλογή διαστήματος<select id="monthFilter"><option value="all">Όλες οι καταγραφές</option></select></label><div id="customRange" class="grid hide"><label class="field">Από<input type="date" id="rangeStart"></label><label class="field">Έως<input type="date" id="rangeEnd"></label></div><p id="rangeMessage" class="muted" role="status"></p><h3>Πυρήνα, ρεύμα και συνολικό κόστος ανά κατοικία</h3><div id="combinedSummary" class="grid" style="margin-top:12px"></div><p id="combinedNote" class="muted"></p><div id="monthlyTotals" class="grid" style="margin-top:12px"></div><h2 style="margin-top:20px">Σύνολα καταχωρισμένων περιόδων</h2><div id="totals" class="grid"></div><h2 class="scope-title">Σύνολο κατανάλωσης σεζόν</h2><div id="seasonTotals" class="grid"></div><details><summary>Ιστορικό αρχικής περιόδου και πρώτες καταμετρήσεις</summary><div id="historicalBaseline"></div><div id="historicalReadings"></div></details><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Περίοδος</th><th>Τσουβάλια / κιλά</th><th>Ώρες πάνω</th><th>Ώρες κάτω</th><th>Πάνω €</th><th>Κάτω €</th><th>Ενέργεια</th></tr></thead><tbody id="history"></tbody></table></div><div class="actions" id="backup"><button id="exportCSV" class="secondary">Εξαγωγή CSV</button><button id="exportJSON" class="secondary">Αντίγραφο JSON</button><button id="importBtn" class="secondary">Επαναφορά JSON</button><input id="importFile" type="file" accept="application/json,.json" hidden><button onclick="window.print()" class="secondary">Εκτύπωση</button><button id="reset" class="danger">Διαγραφή καταγραφών</button></div><p class="muted">Η εφαρμογή αποθηκεύει τις καταχωρίσεις στη συσκευή και τις συγχρονίζει μετά τη σύνδεση Google. Από εδώ κρατάς και αντίγραφο JSON.</p></section><section class="card"><h2>Εγκατάσταση στο κινητό</h2><p class="muted">Άνοιξε τη δημοσιευμένη εφαρμογή με Chrome σε Android και επίλεξε από το μενού «Εγκατάσταση εφαρμογής» ή «Προσθήκη στην αρχική οθόνη». Η εγκατάσταση απαιτεί δημοσίευση σε HTTPS. Οι καταχωρίσεις αποθηκεύονται στη συγκεκριμένη συσκευή. Κράτα αντίγραφο JSON.</p><button id="installPwa" class="secondary" style="display:none">Εγκατάσταση εφαρμογής</button></section><section class="card"><h2>Σταθερά στοιχεία κατοικιών</h2><div class="grid"><div class="stat">Πάνω κατοικία<strong>109 τ.μ.</strong>297,57 κ.μ. · 20.266 kcal/h</div><div class="stat">Κάτω κατοικία<strong>88 τ.μ.</strong>240,24 κ.μ. · 20.910 kcal/h</div><div class="stat">Συμφωνημένη κατανομή<strong>20% / 80%</strong>20% κατά κυβικά, 80% κατά ισχύ σωμάτων × ώρες</div></div><p class="muted">Τα στοιχεία αυτά δεν αλλάζουν από τις καθημερινές καταχωρίσεις. Η κατανομή είναι λογιστική μέθοδος, όχι μέτρηση θερμότητας με θερμιδομετρητές.</p></section>
+<section class="card" id="purchaseLedger"><h2>Αγορές πυρήνας και παραστατικά</h2><p class="muted">Καταχώρισε κάθε απόδειξη ξεχωριστά. Οι αγορές περιλαμβάνονται στο αντίγραφο ασφαλείας JSON και συγχρονίζονται μετά τη σύνδεση Google. Το απόθεμα υπολογίζεται από τις αγορές μείον τις καταχωρισμένες καταναλώσεις.</p><div class="grid"><label class="field">Ημερομηνία αγοράς<input id="buyDate" type="date"></label><label class="field">Αριθμός παραστατικού<input id="buyInvoice" type="text" placeholder="π.χ. 008413"></label><label class="field">Προμηθευτής<input id="buySupplier" type="text" placeholder="Ελαιουργείο"></label><label class="field">Είδος καυσίμου<input id="buyType" type="text" value="Πυρήνα ελιάς"></label><label class="field">Καθαρό βάρος σε κιλά<input id="buyKg" type="text" inputmode="decimal" placeholder="π.χ. 1420"><small>Βάρος πυρήνας μετά την αφαίρεση του απόβαρου.</small></label><label class="field">Τσουβάλια αγοράς (προαιρετικά)<input id="buyBags" type="text" inputmode="numeric" placeholder="π.χ. 47"><small>Γράψε πόσα τσουβάλια παρέλαβες, ανεξάρτητα από το βάρος τους.</small></label><label class="field">Αξία με ΦΠΑ (€)<input id="buyCost" type="text" inputmode="decimal" placeholder="π.χ. 184,60"></label><label class="field">Μεταφορικά (€)<input id="buyTransport" type="text" inputmode="decimal" value="0"></label><label class="field">Εργατικά (€)<input id="buyLabor" type="text" inputmode="decimal" value="0"></label><label class="field">Σημειώσεις<input id="buyNotes" type="text" placeholder="Π.χ. έξοδα προς επιβεβαίωση"></label></div><div class="actions" style="margin-top:12px"><button type="button" id="buySave">Αποθήκευση αγοράς</button><button type="button" id="buyCancel" class="secondary">Ακύρωση επεξεργασίας</button></div><p id="buyMessage" class="muted" role="status"></p><div class="grid" id="buyTotals"></div><div id="buyHistory"></div></section><section class="card"><h2>Μεταβαλλόμενα στοιχεία αγοράς</h2><div class="grid"><label class="field">Κιλά αγοράς (κύρια ποσότητα)<input id="purchaseKg" type="number" min="0.01" step="any" value="5180"></label><label class="field">Ισοδύναμα τσουβάλια αγοράς (προαιρετικά)<input id="purchaseBags" type="number" min="0" step="any" placeholder="Κιλά ÷ 30"><small>1 τσουβάλι = 30 kg. Η αγορά έγινε χύμα σε κιλά.</small></label><label class="field">Αξία πυρήνας (€)<input id="fuelCost" type="number" min="0" step="any" value="673.40"></label><label class="field">Μεταφορά (€)<input id="transport" type="number" min="0" step="any" value="150"></label><label class="field">Εργάτης / αποθήκευση (€)<input id="labor" type="number" min="0" step="any" value="70"></label></div><div class="grid" style="margin-top:12px"><div class="stat">Συνολικό κόστος αγοράς<strong id="totalPurchase">0,00 €</strong></div><div class="stat">Εκτιμώμενα κιλά αγοράς<strong id="totalPurchaseKg">4.800 kg</strong></div><div class="stat">Τιμή ανά κιλό<strong id="unitPrice">0,00000 €</strong></div></div><p class="muted">Οι καταχωρισμένες αγορές ενημερώνουν την τιμή ανά κιλό. Οι αλλαγές επηρεάζουν μόνο νέες καταχωρίσεις. Οι προηγούμενες διατηρούν την τιμή της ημέρας τους.</p><div class="actions"><button id="saveSettings" class="secondary">Αποθήκευση τιμών αγοράς</button></div></section>
+<section class="card" id="electricTariff"><h2>Τιμή ρεύματος ΔΕΗ Γ1 ανά μήνα</h2>
+<div class="grid"><label class="field">Μήνας χρέωσης<input id="rateMonth" type="month"></label><label class="field">Τιμή προμήθειας (€/kWh)<input id="electricRate" type="text" inputmode="decimal" placeholder="π.χ. 0,16901"></label></div>
+<p id="rateDetails" class="muted"></p><div class="actions"><button id="rateSave" class="secondary">Αποθήκευση τιμής μήνα</button></div><p id="rateStatus" role="status"></p></section>
+<section class="card" id="electric"><h2>Ρεύμα κυκλοφορητών</h2><p class="muted">Ο υπολογισμός βασίζεται στις ώρες λειτουργίας των ωρομετρητών και στην ονομαστική ισχύ κάθε κυκλοφορητή. Για περιόδους που καλύπτουν δύο μήνες, οι ώρες μοιράζονται αναλογικά. Η πραγματική ηλεκτρική κατανάλωση εξαρτάται από την ισχύ λειτουργίας.</p><div class="grid"><div class="stat">Πάνω κατοικία<strong>220 W</strong>Κόκκινος κυκλοφορητής, 2η ταχύτητα</div><div class="stat">Κάτω κατοικία<strong>72 W</strong>Πράσινος κυκλοφορητής, 2η ταχύτητα</div></div><h3>Κατανάλωση και κόστος ανά κατοικία</h3><div id="homeElectricSummary" class="grid"></div></section>
+
+<footer class="muted">Οι ώρες και η κατανάλωση πρέπει να καλύπτουν ακριβώς το ίδιο χρονικό διάστημα. Το καύσιμο συντήρησης της φλόγας περιλαμβάνεται στη συνολική κατανάλωση και δεν χρεώνεται δεύτερη φορά.</footer></main>
+<script>
+(()=>{'use strict';const KEY='pyrina_pwa_2026_v1';const $=id=>document.getElementById(id);const fixed={upVolume:297.57,downVolume:240.24,upPower:20266,downPower:20910};const ids=['purchaseKg','fuelCost','transport','labor'];const defaultState={settings:{purchaseKg:5180,fuelCost:673.40,transport:150,labor:70},entries:[]};let state;try{const obj=JSON.parse(localStorage.getItem(KEY));state=obj&&Array.isArray(obj.entries)&&obj.settings?obj:structuredClone(defaultState);if(!Number.isFinite(state.settings.purchaseKg)){state.settings.purchaseKg=Number(state.settings.purchaseBags||0)*Number(state.settings.bagKg||30)||5180;if(!state.entries.length){state.settings.purchaseKg=5180;state.settings.fuelCost=635.28}}}catch(e){state=structuredClone(defaultState)}const fmt=(n,d=2)=>Number(n).toLocaleString('el-GR',{minimumFractionDigits:d,maximumFractionDigits:d});const num=id=>Number(String($(id).value).trim().replace(/\s/g,'').replace(',','.'));const getDate=()=>new Date($('stamp').value).getTime();let notifySync=()=>{};const persist=()=>{localStorage.setItem(KEY,JSON.stringify(state));notifySync()};const readSettings=()=>Object.fromEntries(ids.map(id=>[id,num(id)]));const validSettings=s=>ids.every(id=>Number.isFinite(s[id])&&s[id]>=(id==='purchaseKg'?0.001:0));const pricing=s=>({kg:s.purchaseKg,cost:s.fuelCost+s.transport+s.labor,price:(s.fuelCost+s.transport+s.labor)/s.purchaseKg});const timeLabel=t=>new Date(t).toLocaleString('el-GR',{dateStyle:'short',timeStyle:'short',hour12:false});const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function updatePrice(){const s=readSettings();if(!validSettings(s)){['totalPurchase','totalPurchaseKg','unitPrice'].forEach(id=>$(id).textContent='Ελέγξτε τα στοιχεία');return}const p=pricing(s);$('totalPurchase').textContent=fmt(p.cost)+' €';$('totalPurchaseKg').textContent=fmt(p.kg)+' kg';$('unitPrice').textContent=fmt(p.price,5)+' €'}function last(){return state.entries.at(-1)||(state.seasonBaseline?.siloKg===180?state.seasonBaseline:null)}function previousStock(previous){
+  if(previous===state.seasonBaseline)return previous.siloKg+(previous.extraKg||0);
+  return previous.stockKg??180;
+}
+function defaultEndStock(previous){
+  return previousStock(previous);
+}
+function renderForm(){const previous=last(),initial=!previous;
+$('stockReference').textContent=previous
+  ? 'Προηγούμενο απόθεμα: περίπου '+fmt(previousStock(previous))+' kg. Αν αφήσεις το νέο απόθεμα κενό, χρησιμοποιείται '+fmt(defaultEndStock(previous))+' kg.'
+  : '';
+$('previousReading').textContent=previous
+  ? (previous===state.seasonBaseline?'Τελευταία καταμέτρηση και σημείο αναφοράς σιλό στις ':'Τελευταία ένδειξη στις ')+timeLabel(previous.stamp)+'. Πάνω '+fmt(previous.upper)+' ώρες · Κάτω '+fmt(previous.lower)+' ώρες.'
+  : 'Δεν έχεις αποθηκεύσει αρχική ένδειξη για τις νέες περιόδους.';$('firstInfo').classList.toggle('hide',!initial);$('consumeSection').classList.toggle('hide',initial);$('saveEntry').textContent=initial?'Αποθήκευση αρχικής ένδειξης':'Αποθήκευση καταγραφής';$('result').classList.add('hide');$('message').textContent='';$('upperMeter').placeholder=previous?'Προηγούμενη: '+fmt(previous.upper):'π.χ. 4414,04';$('lowerMeter').placeholder=previous?'Προηγούμενη: '+fmt(previous.lower):'π.χ. 2273,19'}function calculate(){const s=readSettings(),p=pricing(s),stamp=getDate(),up=num('upperMeter'),down=num('lowerMeter'),prev=last();if(!validSettings(s)||!Number.isFinite(p.price)||(!last() ? false : p.cost<=0)||!Number.isFinite(stamp)||!$('stamp').value||!Number.isFinite(up)||!Number.isFinite(down)||$('upperMeter').value===''||$('lowerMeter').value===''||up<0||down<0)throw Error('Συμπλήρωσε ημερομηνία, ενδείξεις και την πραγματική τιμή αγοράς (όχι μηδέν).');if(prev&&stamp<=prev.stamp)throw Error('Η νέα μέτρηση πρέπει να έχει μεταγενέστερη ημερομηνία από την προηγούμενη.');if(!prev)return{stamp,upper:up,lower:down,initial:true};const upHours=up-prev.upper,downHours=down-prev.lower;if(upHours<0||downHours<0)throw Error('Οι νέες ενδείξεις δεν πρέπει να είναι μικρότερες από τις προηγούμενες.');const refilledKg=num('usedKg');if($('usedKg').value===''||!Number.isFinite(refilledKg)||refilledKg<0)throw Error('Συμπλήρωσε τα κιλά που έριξες, ακόμη και αν είναι μηδέν.');const stockInput=$('stockBags').value.trim();
+const stockKg=stockInput?num('stockBags')*30:defaultEndStock(prev);
+if(!Number.isFinite(stockKg)||stockKg<0)throw Error('Συμπλήρωσε έγκυρο απόθεμα σιλό.');
+const stockAdjustmentKg=previousStock(prev)-stockKg;
+const kg=refilledKg+stockAdjustmentKg,bags=kg/30;
+if(kg<0)throw Error('Το νέο απόθεμα υπερβαίνει το προηγούμενο απόθεμα μαζί με όσα έριξες. Έλεγξε τα στοιχεία.');if(upHours===0&&downHours===0&&kg>0)throw Error('Καταχωρίστηκε κατανάλωση αλλά κανένας κυκλοφορητής δεν λειτούργησε. Η συμφωνημένη κατανομή του 80% δεν ορίζεται.');const cost=kg*p.price;const fixedUp=fixed.upVolume/(fixed.upVolume+fixed.downVolume),variableUp=upHours+downHours>0?(fixed.upPower*upHours)/(fixed.upPower*upHours+fixed.downPower*downHours):0;const shareUp=upHours+downHours>0?.2*fixedUp+.8*variableUp:fixedUp;return{stamp,upper:up,lower:down,initial:false,from:prev.stamp,upHours,downHours,bags,kg,refilledKg,stockAdjustmentKg,stockKg,cost,price:p.price,upKg:kg*shareUp,downKg:kg*(1-shareUp),upCost:cost*shareUp,downCost:cost*(1-shareUp),upPercent:shareUp*100,fixedCost:cost*.2,variableCost:cost*.8,upFixedCost:cost*.2*fixedUp,downFixedCost:cost*.2*(1-fixedUp),upVariableCost:cost*.8*variableUp,downVariableCost:cost*.8*(1-variableUp),notes:$('notes').value.trim(),interval:$('interval').value}}function showResult(e){const el=$('result');el.classList.remove('hide');el.innerHTML=e.initial?'<div class="notice">Αρχικές ενδείξεις: πάνω '+fmt(e.upper)+' ώρες, κάτω '+fmt(e.lower)+' ώρες. Αποθήκευσέ τες για να αρχίσουν οι υπολογισμοί.</div>':'<div class="grid"><div class="stat">Κατανάλωση περιόδου<strong>'+fmt(e.kg)+' kg</strong>'+fmt(e.bags)+' τσουβάλια · '+fmt(e.cost)+' €</div><div class="stat">Πάνω κατοικία<strong>'+fmt(e.upCost)+' €</strong>'+fmt(e.upKg)+' kg · '+fmt(e.upHours)+' ώρες · '+fmt(e.upPercent)+'%</div><div class="stat">Κάτω κατοικία<strong>'+fmt(e.downCost)+' €</strong>'+fmt(e.downKg)+' kg · '+fmt(e.downHours)+' ώρες · '+fmt(100-e.upPercent)+'%</div></div><p class="muted">Περίοδος: '+timeLabel(e.from)+' έως '+timeLabel(e.stamp)+'. '+(e.stockAdjustmentKg?'Συμπλήρωση '+fmt(e.refilledKg)+' kg · μεταβολή αποθέματος '+fmt(-e.stockAdjustmentKg)+' kg. ':'Κατανάλωση βάσει συμπλήρωσης με ίδιο απόθεμα. ')+'Τιμή '+fmt(e.price,5)+' €/kg. Πάγιο 20%: '+fmt(e.fixedCost)+' € · Υπόλοιπο 80%: '+fmt(e.variableCost)+' €.</p>'}function run(save){$('message').className='';try{const e=calculate();showResult(e);if(save){state.settings=readSettings();state.entries.push(e);persist();renderAll();renderPurchases();showResult(e);$('message').textContent=e.initial?'Αποθηκεύτηκαν οι αρχικές ενδείξεις.':'Η μέτρηση αποθηκεύτηκε.';$('message').className='ok';$('usedBags').value='';$('usedKg').value='';$('stockBags').value='';$('notes').value='';$('upperMeter').value='';$('lowerMeter').value='';}else $('message').textContent='Προεπισκόπηση υπολογισμού. Πάτησε «Αποθήκευση καταγραφής» για οριστική καταχώριση.'}catch(err){$('message').textContent=err.message;$('message').className='error';$('result').classList.add('hide')}}function periodCards(rows){
+  if(!rows.length)return '<p class="muted">Δεν υπάρχουν ολοκληρωμένες περίοδοι για αυτή την επιλογή.</p>';
+  const sum=key=>rows.reduce((total,entry)=>total+(entry[key]||0),0);
+  const card=(label,kg,cost,detail)=>'<div class="stat">'+label+'<strong>'+fmt(kg)+' kg</strong>'+fmt(cost)+' € · '+detail+'</div>';
+  return card('Και οι δύο κατοικίες',sum('kg'),sum('cost'),fmt(sum('bags'))+' τσουβάλια')
+    +card('Πάνω κατοικία',sum('upKg'),sum('upCost'),fmt(sum('upHours'))+' ώρες λειτουργίας')
+    +card('Κάτω κατοικία',sum('downKg'),sum('downCost'),fmt(sum('downHours'))+' ώρες λειτουργίας');
+}
+function monthKey(stamp){
+  const date=new Date(stamp);
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+}
+function summaryRange(){
+  const selection=$('monthFilter').value;
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const between=(start,end,message='')=>({includes:entry=>entry.stamp>=start&&entry.stamp<end,message});
+  if(selection==='all')return {includes:()=>true,message:''};
+  if(selection==='season'){
+    const startYear=month>=9?year:year-1;
+    return between(new Date(startYear,9,1),new Date(startYear+1,4,1),'Σεζόν '+startYear+' / '+(startYear+1)+' · 1 Οκτωβρίου έως 30 Απριλίου.');
+  }
+  if(selection==='custom'){
+    const from=$('rangeStart').value,to=$('rangeEnd').value;
+    if(!from||!to||from>to)return {includes:()=>false,message:'Διάλεξε ημερομηνία έναρξης και λήξης με τη σωστή σειρά.'};
+    const start=new Date(from+'T00:00:00'),end=new Date(to+'T00:00:00');
+    end.setDate(end.getDate()+1);
+    return between(start,end);
+  }
+  if(/^\d{4}-\d{2}$/.test(selection))return {includes:entry=>monthKey(entry.stamp)===selection,message:''};
+  const hours=Number(selection);
+  return between(now.getTime()-hours*3600000,now.getTime()+1);
+}
+function renderAll(){renderForm();const rows=state.entries.filter(e=>!e.initial);
+const currentMonth=monthKey(Date.now());
+const months=[...new Set([currentMonth,...state.entries.map(e=>monthKey(e.stamp)),...Object.keys(monthlyPumpHours(rows))])].sort().reverse();
+const selector=$('monthFilter'),selected=selector.value;
+const presets=[
+  ['all','Όλες οι καταγραφές'],['24','Τελευταίες 24 ώρες'],['48','Τελευταίες 48 ώρες'],
+  ['72','Τελευταίες 72 ώρες'],['168','Τελευταίες 7 ημέρες'],['360','Τελευταίες 15 ημέρες'],
+  ['season','Όλη η σεζόν'],['custom','Ελεύθερο διάστημα']
+];
+const options=presets.concat(months.map(m=>[m,m.slice(5)+'/'+m.slice(0,4)+(m===currentMonth?' (τρέχων μήνας)':'')]));
+selector.innerHTML=options.map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('');
+selector.value=options.some(([value])=>value===selected)?selected:'all';
+$('customRange').classList.toggle('hide',selector.value!=='custom');
+const range=summaryRange();
+$('rangeMessage').textContent=range.message;
+const selectedRows=rows.filter(range.includes);
+renderHomeElectricSummary();
+renderCombinedSummary(selectedRows);
+$('monthlyTotals').innerHTML=periodCards(selectedRows);
+$('totals').innerHTML=periodCards(rows);
+$('seasonTotals').innerHTML='<div class="stat">Καύσιμο που κάηκε στη σεζόν<strong>'+fmt(seasonUsed())+' kg</strong>'+fmt(seasonUsed()/30)+' ισοδύναμα τσουβάλια</div>'
+  +'<p class="muted">Σύνολο από την αρχή της σεζόν έως '+timeLabel(rows.length?rows.at(-1).stamp:state.seasonBaseline.stamp)+'. Περιλαμβάνει την αρχική κατανάλωση και τις μεταγενέστερες μετρήσεις χωρίς διπλή προσμέτρηση.</p>';
+const baseline=state.seasonBaseline;
+if(baseline&&Number.isFinite(baseline.kg)){
+  // Οι ώρες πριν από την πρώτη πλήρη μέτρηση είναι εκτιμήσεις και εμφανίζονται ως τέτοιες.
+  const estimatedUpHours=16.50,estimatedDownHours=17.59;
+  const fixedUp=fixed.upVolume/(fixed.upVolume+fixed.downVolume);
+  const variableUp=fixed.upPower*estimatedUpHours/(fixed.upPower*estimatedUpHours+fixed.downPower*estimatedDownHours);
+  const shareUp=.2*fixedUp+.8*variableUp;
+  const baselineUp=baseline.kg*shareUp,baselineDown=baseline.kg-baselineUp;
+  const purchases=Array.isArray(state.purchases)?state.purchases:[];
+  const purchasedKg=purchases.reduce((n,p)=>n+(Number(p.kg)||0),0);
+  const purchasedCost=purchases.reduce((n,p)=>n+(Number(p.cost)||0)+(Number(p.transport)||0)+(Number(p.labor)||0),0);
+  const baselineCost=purchasedKg>0?baseline.kg*purchasedCost/purchasedKg:null;
+  const details=baselineCost===null?'':' · εκτιμώμενο κόστος '+fmt(baselineCost)+' €';
+  const subsequent=rows.filter(e=>e.from>=baseline.stamp);
+  const upTotal=baselineUp+subsequent.reduce((n,e)=>n+(e.upKg||0),0);
+  const downTotal=baselineDown+subsequent.reduce((n,e)=>n+(e.downKg||0),0);
+  const upCostTotal=baselineCost===null?null:baselineCost*shareUp+subsequent.reduce((n,e)=>n+(e.upCost||0),0);
+  const downCostTotal=baselineCost===null?null:baselineCost*(1-shareUp)+subsequent.reduce((n,e)=>n+(e.downCost||0),0);
+  $('seasonTotals').innerHTML+='<h3 style="grid-column:1/-1;margin:12px 0 0">Συνολική κατανομή σεζόν ανά κατοικία</h3>'
+    +'<div class="stat">Πάνω κατοικία<strong>'+fmt(upTotal)+' kg</strong>'+fmt(upTotal/seasonUsed()*100)+'%'+(baselineCost===null?'':' · '+fmt(upCostTotal)+' €')+'</div>'
+    +'<div class="stat">Κάτω κατοικία<strong>'+fmt(downTotal)+' kg</strong>'+fmt(downTotal/seasonUsed()*100)+'%'+(baselineCost===null?'':' · '+fmt(downCostTotal)+' €')+'</div>'
+    +'<p class="muted" style="grid-column:1/-1">Συμπεριλαμβάνει την αρχική εκτιμώμενη κατανομή και '+subsequent.length+' μεταγενέστερες περιόδους. Τα σύνολα ενημερώνονται με κάθε νέα μέτρηση.</p>';
+  $('historicalBaseline').innerHTML='<p>Αρχική περίοδος έως '+timeLabel(baseline.stamp)+'. Κατανάλωση '+fmt(baseline.kg)+' kg. Πάνω '+fmt(baselineUp)+' kg, κάτω '+fmt(baselineDown)+' kg. Ώρες εκτίμησης: 16,50 πάνω και 17,59 κάτω. Κατανομή 20% βάσει κυβικών και 80% βάσει ισχύος σωμάτων και ωρών. Οι αρχικές ώρες είναι εν μέρει εκτιμώμενες.</p>'
+    +(Number.isFinite(baseline.addedKg)?'<p>Συμπληρώθηκαν '+fmt(baseline.addedKg)+' kg, με απόθεμα '+fmt(baseline.siloKg+(baseline.extraKg||0))+' kg κατά την καταμέτρηση.</p>':'');
+}
+if(Number.isFinite(baseline.addedKg)){
+  $('seasonTotals').innerHTML+='<p class="muted">Στις '+timeLabel(baseline.stamp)+' τα 17 τσουβάλια αντιστοιχούσαν σε περίπου '+fmt(baseline.addedKg)+' kg. Απόθεμα μέσα στο σιλό: περίπου '+fmt(baseline.siloKg+baseline.extraKg)+' kg, δηλαδή '+fmt(baseline.siloKg)+' kg μέχρι τη στάθμη γεμίσματος και '+fmt(baseline.extraKg)+' kg στο μικρό ύψωμα (περίπου ⅓ τσουβαλιού). Εκτιμώμενη κατανάλωση: '+fmt(baseline.kg)+' kg.</p>';
+}
+const readings=[
+  {label:'01/11/2026, 10:14',up:4408.43,down:2267.21},
+  {label:'03/11/2026, 11:11',up:4413.04,down:2272.27},
+  {label:'03/11/2026, 20:02',up:4414.04,down:2273.19}
+];
+$('historicalReadings').innerHTML='<div class="tablewrap"><table><thead><tr><th>Καταμέτρηση</th><th>Ένδειξη πάνω</th><th>Ένδειξη κάτω</th><th>Διαφορά πάνω</th><th>Διαφορά κάτω</th></tr></thead><tbody>'
+  +readings.map((reading,index)=>{
+    const previous=readings[index-1];
+    return '<tr><td>'+reading.label+'</td><td>'+fmt(reading.up)+'</td><td>'+fmt(reading.down)+'</td><td>'
+      +(previous?fmt(reading.up-previous.up)+' ώρες':'Αρχική ένδειξη')+'</td><td>'
+      +(previous?fmt(reading.down-previous.down)+' ώρες':'Αρχική ένδειξη')+'</td></tr>';
+  }).join('')
+  +'</tbody></table></div><p class="muted">Η 01/11 στις 10:14 είναι η πρώτη ένδειξη των ωρομετρητών. Η 03/11 στις 20:02 είναι η τελευταία από τις παραπάνω μετρήσεις και το σημείο αναφοράς για το απόθεμα του σιλό.</p>';
+$('history').innerHTML=state.entries.map((e,i)=>!range.includes(e)?'':'<tr><td>'+(e.initial?'Αρχική ένδειξη '+timeLabel(e.stamp):timeLabel(e.from)+' έως '+timeLabel(e.stamp))+'</td><td>'+(e.initial?'Αφετηρία':fmt(e.bags)+' / '+fmt(e.kg))+'</td><td>'+(e.initial?fmt(e.upper)+' (ένδειξη)':fmt(e.upHours))+'</td><td>'+(e.initial?fmt(e.lower)+' (ένδειξη)':fmt(e.downHours))+'</td><td>'+(e.initial?'':fmt(e.upCost))+'</td><td>'+(e.initial?'':fmt(e.downCost))+'</td><td><button class="secondary" data-remove="'+i+'">Διαγραφή</button></td></tr>').join('')||'<tr><td colspan="7">Δεν υπάρχουν μετρήσεις για αυτή την επιλογή.</td></tr>';$('history').querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.remove);if(i!==state.entries.length-1){alert('Για συνέπεια των μετρήσεων διαγράφεται μόνο η τελευταία καταχώριση.');return}if(confirm('Να διαγραφεί η τελευταία καταχώριση;')){state.entries.pop();persist();renderAll();renderPurchases()}}))}function download(name,body,type){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([body],{type}));a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}const g1Rates={'2026-09':[.14913,.18544],'2026-10':[.15913,.21997],'2026-11':[.16901,.28444]};
+function monthlyRate(month){
+  const saved=state.electricRates?.[month];
+  return Number.isFinite(saved)&&saved>=0?saved:g1Rates[month]?.[0];
+}
+function renderRate(){
+  const month=$('rateMonth').value;
+  const rate=monthlyRate(month),published=g1Rates[month];
+  $('electricRate').value=rate===undefined?'':fmt(rate,5);
+  $('rateDetails').textContent=published
+    ? 'ΔΕΗ Γ1, κανονική ζώνη με πλήρη έκπτωση. Έως 200 kWh: '+fmt(published[0],5)+' €/kWh. Πάνω από 200 kWh: '+fmt(published[1],5)+' €/kWh. Το όριο αφορά τη συνολική μηνιαία κατανάλωση της παροχής.'
+    : 'Συμπλήρωσε την τιμή προμήθειας για τον συγκεκριμένο μήνα από τον λογαριασμό σου.';
+  $('rateStatus').textContent=Object.hasOwn(state.electricRates||{},month)?'Χρησιμοποιείται η αποθηκευμένη τιμή σου.':'';
+}
+$('rateMonth').value=monthKey(Date.now());
+$('rateMonth').addEventListener('change',renderRate);
+$('rateSave').addEventListener('click',()=>{
+  const month=$('rateMonth').value, input=$('electricRate').value.trim(), rate=num('electricRate');
+  if(!/^\d{4}-\d{2}$/.test(month)||!input||!Number.isFinite(rate)||rate<0){
+    $('rateStatus').textContent='Συμπλήρωσε μήνα και έγκυρη τιμή ανά kWh.';return;
+  }
+  state.electricRates={...state.electricRates,[month]:rate};
+  persist();renderRate();renderAll();
+});
+function monthlyPumpHours(entries){
+  const months={};
+  for(const entry of entries){
+    const start=Number.isFinite(entry.from)&&entry.from<entry.stamp?entry.from:entry.stamp;
+    let cursor=start;
+    do {
+      const date=new Date(cursor);
+      const nextMonth=new Date(date.getFullYear(),date.getMonth()+1,1).getTime();
+      const end=Math.min(entry.stamp,nextMonth);
+      const share=start===entry.stamp?1:(end-cursor)/(entry.stamp-start);
+      const month=monthKey(cursor);
+      const hours=months[month]??={up:0,down:0};
+      hours.up+=(entry.upHours||0)*share;
+      hours.down+=(entry.downHours||0)*share;
+      cursor=end;
+    } while(cursor<entry.stamp);
+  }
+  return months;
+}
+function renderCombinedSummary(selectedRows){
+  const baseline=state.seasonBaseline;
+  const selection=$('monthFilter').value;
+  const includeBaseline=(selection==='all'||selection==='season'||(/^\\d{4}-\\d{2}$/.test(selection)&&baseline&&monthKey(baseline.stamp)===selection))&&baseline&&Number.isFinite(baseline.kg);
+  const values={up:{kg:0,fuel:0,kwh:0,electric:0},down:{kg:0,fuel:0,kwh:0,electric:0}};
+  let unknownFuel=false,unknownElectric=false;
+  if(includeBaseline){
+    const upHours=16.50,downHours=17.59;
+    const fixedUp=fixed.upVolume/(fixed.upVolume+fixed.downVolume);
+    const variableUp=fixed.upPower*upHours/(fixed.upPower*upHours+fixed.downPower*downHours);
+    const share=.2*fixedUp+.8*variableUp;
+    const purchases=Array.isArray(state.purchases)?state.purchases:[];
+    const kg=purchases.reduce((n,p)=>n+(Number(p.kg)||0),0);
+    const cost=purchases.reduce((n,p)=>n+(Number(p.cost)||0)+(Number(p.transport)||0)+(Number(p.labor)||0),0);
+    const amount=kg>0?baseline.kg*cost/kg:null;
+    values.up.kg+=baseline.kg*share;values.down.kg+=baseline.kg*(1-share);
+    if(amount===null)unknownFuel=true;
+    else{values.up.fuel+=amount*share;values.down.fuel+=amount*(1-share)}
+  }
+  for(const e of selectedRows){
+    if(includeBaseline&&e.from<baseline.stamp)continue;
+    values.up.kg+=e.upKg||0;values.down.kg+=e.downKg||0;
+    values.up.fuel+=e.upCost||0;values.down.fuel+=e.downCost||0;
+  }
+  const months=monthlyPumpHours(selectedRows);
+  for(const [month,h] of Object.entries(months)){
+    const rate=monthlyRate(month);
+    values.up.kwh+=h.up*.220;values.down.kwh+=h.down*.072;
+    if(rate===undefined)unknownElectric=true;
+    else{values.up.electric+=h.up*.220*rate;values.down.electric+=h.down*.072*rate}
+  }
+  const total={kg:values.up.kg+values.down.kg,fuel:values.up.fuel+values.down.fuel,kwh:values.up.kwh+values.down.kwh,electric:values.up.electric+values.down.electric};
+  const card=(label,v)=>'<div class="stat">'+label+'<strong>'+fmt(v.kg)+' kg πυρήνα</strong>'
+    +'Πυρήνα: '+(unknownFuel?'εκκρεμεί κόστος':fmt(v.fuel)+' €')+'<br>'
+    +'Ρεύμα κυκλοφορητή: '+fmt(v.kwh)+' kWh · '+(unknownElectric?'εκκρεμεί τιμή':fmt(v.electric)+' €')+'<br>'
+    +'<b>Σύνολο: '+(unknownFuel||unknownElectric?'εκκρεμεί':fmt(v.fuel+v.electric)+' €')+'</b></div>';
+  $('combinedSummary').innerHTML=card('Πάνω κατοικία',values.up)+card('Κάτω κατοικία',values.down)+card('Και οι δύο κατοικίες',total);
+  $('combinedNote').textContent=(includeBaseline?'Περιλαμβάνεται η αρχική εκτιμώμενη κατανάλωση πυρήνας. ':'')
+    +'Το ηλεκτρικό κόστος αφορά μόνο τους κυκλοφορητές των ολοκληρωμένων περιόδων. Δεν υπολογίζεται ρεύμα κοχλία, φυσητήρα ή πίνακα, ούτε άλλες χρεώσεις λογαριασμού. Οι αρχικές ώρες κυκλοφορητών δεν έχουν υπολογιστεί στο ρεύμα.';
+}
+function renderHomeElectricSummary(){
+  const rows=state.entries.filter(e=>!e.initial);
+  const range=summaryRange(),selection=$('monthFilter').value;
+  const chosen=rows.filter(e=>range.includes(e));
+  const months=monthlyPumpHours(chosen);
+  const totals={up:0,down:0,upCost:0,downCost:0};
+  let missing=false;
+  for(const [month,h] of Object.entries(months)){
+    const rate=monthlyRate(month);
+    totals.up+=h.up*.220;totals.down+=h.down*.072;
+    if(rate===undefined){missing=true;continue}
+    totals.upCost+=h.up*.220*rate;totals.downCost+=h.down*.072*rate;
+  }
+  const card=(label,kwh,cost)=>'<div class="stat">'+label+'<strong>'+fmt(kwh)+' kWh</strong>'+(missing?'Εκκρεμεί τιμή ρεύματος μήνα':fmt(cost)+' €')+'</div>';
+  const note=!chosen.length?'Δεν υπάρχουν νέες ολοκληρωμένες περίοδοι για το επιλεγμένο διάστημα. Η αρχική περίοδος δεν έχει ακριβείς ώρες κυκλοφορητών.':'Υπολογισμός για '+chosen.length+' ολοκληρωμένες περιόδους.';
+  $('homeElectricSummary').innerHTML=card('Πάνω κατοικία · κυκλοφορητής',totals.up,totals.upCost)+card('Κάτω κατοικία · κυκλοφορητής',totals.down,totals.downCost)+card('Σύνολο κυκλοφορητών',totals.up+totals.down,totals.upCost+totals.downCost)+'<p class="muted">'+note+'</p>';
+}
+// Ιστορικό αγορών με παραστατικά. Διατήρηση των ήδη αποθηκευμένων μετρήσεων.
+const buyFields=['buyDate','buyInvoice','buySupplier','buyType','buyKg','buyBags','buyCost','buyTransport','buyLabor','buyNotes'];
+const parseBuy=v=>Number(String(v).trim().replace(/\s/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));
+const initialPurchases=[
+{id:'gift-oct',date:'2026-10-27',invoice:'ΔΩΡΟ',supplier:'Δωρεάν παραλαβή',type:'Πυρήνα ελιάς',kg:60,cost:0,transport:0,labor:0,notes:'2 δωρεάν τσουβάλια × 30 kg. Δεν περιλαμβάνονται στα αγορασμένα κιλά',gift:true},
+{id:'initial-oct',date:'2026-10-27',invoice:'008413',supplier:'Ελαιουργική Ηλείας Α.Ε.',type:'Κουκούτσι πυρηνόξυλο συσκευασμένο',kg:1420,cost:184.60,transport:40,labor:0,notes:'40 ευρώ βενζίνη προσωπικού αγροτικού, χωρίς εργατικά'},
+{id:'initial-nov-1',date:'2026-11-02',invoice:'',supplier:'',type:'Πυρήνα ελιάς',kg:2200,cost:286,transport:0,labor:0,notes:'Αρχική αγορά, παραστατικό 1'},
+{id:'initial-nov-2',date:'2026-11-02',invoice:'',supplier:'',type:'Πυρήνα ελιάς',kg:2980,cost:387.40,transport:150,labor:70,notes:'Αρχική αγορά, παραστατικό 2. Κοινά μεταφορικά και εργατικά'}
+];
+const needsPurchaseSetup=!Array.isArray(state.purchases);
+if(needsPurchaseSetup){state.purchases=initialPurchases;syncPurchases()}
+const oct=state.purchases.find(x=>x.id==='initial-oct');if(!state.seasonBaseline&&oct&&oct.transport===0&&oct.labor===0){oct.transport=40;oct.notes='40 ευρώ βενζίνη προσωπικού αγροτικού, χωρίς εργατικά';persist()}
+function correctSeasonBaseline(target){
+  const previous=target.seasonBaseline;
+  const legacy=previous?.kg===510;
+  const quarterBag=previous?.addedKg===510&&previous.siloKg===180&&previous.extraKg===7.5&&previous.kg===322.5;
+  if(previous&&(!(legacy||quarterBag)||previous.upper!==4414.04||previous.lower!==2273.19))return false;
+  const addedKg=17*30,siloKg=180,extraKg=30/3;
+  target.seasonBaseline={
+    stamp:new Date('2026-11-03T20:02:00+02:00').getTime(),
+    upper:4414.04,lower:2273.19,
+    addedKg,siloKg,extraKg,kg:addedKg-siloKg-extraKg
+  };
+  return true;
+}
+if(correctSeasonBaseline(state))persist();
+const seasonUsed=()=>state.seasonBaseline.kg+state.entries.filter(e=>!e.initial&&e.from>=state.seasonBaseline.stamp).reduce((a,e)=>a+(e.kg||0),0);
+let editingBuy=null;
+function syncPurchases(){const p=state.purchases,kg=p.reduce((a,x)=>a+x.kg,0),cost=p.reduce((a,x)=>a+x.cost+x.transport+x.labor,0);if(!kg)return;state.settings={purchaseKg:kg,fuelCost:p.reduce((a,x)=>a+x.cost,0),transport:p.reduce((a,x)=>a+x.transport,0),labor:p.reduce((a,x)=>a+x.labor,0)};ids.forEach(id=>$(id).value=state.settings[id]);$('purchaseBags').value=+(kg/30).toFixed(6);updatePrice();persist()}
+function renderPurchases(){const p=state.purchases,kg=p.reduce((a,x)=>a+x.kg,0),cost=p.reduce((a,x)=>a+x.cost+x.transport+x.labor,0),used=seasonUsed(),paidKg=p.filter(x=>!x.gift).reduce((a,x)=>a+x.kg,0),giftKg=p.filter(x=>x.gift).reduce((a,x)=>a+x.kg,0),fuelOnly=p.reduce((a,x)=>a+x.cost,0),shipping=p.reduce((a,x)=>a+x.transport,0),workers=p.reduce((a,x)=>a+x.labor,0);$('buyTotals').innerHTML='<div class="stat">Αγορασμένη πυρήνα<strong>'+fmt(paidKg)+' kg</strong>'+fmt(paidKg/30)+' ισοδύναμα τσουβάλια · '+fmt(fuelOnly)+' € αξία καυσίμου</div><div class="stat">Δωρεάν πυρήνα<strong>'+fmt(giftKg)+' kg</strong>'+fmt(giftKg/30)+' ισοδύναμα τσουβάλια</div><div class="stat">Συνολική παραλαβή<strong>'+fmt(kg)+' kg</strong>'+fmt(kg/30)+' ισοδύναμα τσουβάλια</div><div class="stat">Μέση τιμή συνολικού αποθέματος<strong>'+fmt(kg?cost/kg:0,5)+' €/kg</strong>Περιλαμβάνει δωρεάν ποσότητα</div><div class="stat">Κατανάλωση σεζόν<strong>'+fmt(used)+' kg</strong>'+fmt(used/30)+' ισοδύναμα τσουβάλια</div><div class="stat">Συνολικό απόθεμα (μαζί με το σιλό)<strong>'+fmt(kg-used)+' kg</strong>'+fmt((kg-used)/30)+' τσουβάλια</div>';$('buyHistory').innerHTML=p.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>'<div class="stat" style="margin-top:10px"><strong>'+esc(x.date.split('-').reverse().join('/'))+' · '+fmt(x.kg)+' kg</strong>'+(Number.isSafeInteger(x.bagCount)&&x.bagCount>0?'<p>'+fmt(x.bagCount,0)+' καταγεγραμμένα τσουβάλια</p>':'')+esc(x.supplier)+' · '+esc(x.invoice||'χωρίς αριθμό')+'<p>Αξία καυσίμου '+fmt(x.cost)+' € · Μεταφορικά '+fmt(x.transport)+' € · Εργατικά '+fmt(x.labor)+' € · Σύνολο '+fmt(x.cost+x.transport+x.labor)+' € · '+esc(x.notes||'')+'</p><div class="actions"><button type="button" class="secondary" data-buy-edit="'+esc(x.id)+'">Επεξεργασία</button><button type="button" class="secondary" data-buy-delete="'+esc(x.id)+'">Διαγραφή</button></div></div>').join('')||'<p class="muted">Δεν υπάρχουν αγορές.</p>'}
+function clearBuy(){editingBuy=null;buyFields.forEach(k=>$(k).value='');$('buyType').value='Πυρήνα ελιάς';$('buyTransport').value='0';$('buyLabor').value='0';$('buyDate').value=new Date().toLocaleDateString('en-CA');$('buyMessage').textContent=''}
+$('buySave').addEventListener('click',()=>{const kg=parseBuy($('buyKg').value),cost=parseBuy($('buyCost').value),transport=parseBuy($('buyTransport').value),labor=parseBuy($('buyLabor').value),date=$('buyDate').value,bagsInput=$('buyBags').value.trim(),bagCount=Number(bagsInput);if(bagsInput&&(!/^\d+$/.test(bagsInput)||!Number.isSafeInteger(bagCount)||bagCount<1)){alert('Γράψε τον αριθμό τσουβαλιών ως θετικό ακέραιο ή άφησε το πεδίο κενό.');return}if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||![kg,cost,transport,labor].every(Number.isFinite)||kg<=0||[cost,transport,labor].some(x=>x<0)){alert('Συμπλήρωσε ημερομηνία, θετικά κιλά και έγκυρα ποσά.');return}const previous=state.purchases.find(x=>x.id===editingBuy);const item={...previous,id:editingBuy||'buy-'+Date.now(),date,invoice:$('buyInvoice').value.trim(),supplier:$('buySupplier').value.trim(),type:$('buyType').value.trim(),kg,cost,transport,labor,notes:$('buyNotes').value.trim()};if(bagsInput)item.bagCount=bagCount;else delete item.bagCount;if(editingBuy){state.purchases=state.purchases.map(x=>x.id===editingBuy?item:x)}else state.purchases.push(item);syncPurchases();renderPurchases();clearBuy();$('buyMessage').textContent='Η αγορά αποθηκεύτηκε. Οι προηγούμενες καταγραφές διατηρούν το κόστος που υπολογίστηκε όταν αποθηκεύτηκαν.'});
+$('buyCancel').addEventListener('click',clearBuy);
+$('buyHistory').addEventListener('click',e=>{const edit=e.target.closest('[data-buy-edit]'),del=e.target.closest('[data-buy-delete]');if(edit){const item=state.purchases.find(x=>x.id===edit.dataset.buyEdit);if(!item)return;editingBuy=item.id;for(const [key,value] of Object.entries({buyDate:item.date,buyInvoice:item.invoice,buySupplier:item.supplier,buyType:item.type,buyKg:item.kg,buyBags:item.bagCount??'',buyCost:item.cost,buyTransport:item.transport,buyLabor:item.labor,buyNotes:item.notes}))$(key).value=value;document.getElementById('purchaseLedger').scrollIntoView({behavior:'smooth'});}if(del){if(!confirm('Να διαγραφεί το συγκεκριμένο παραστατικό;'))return;state.purchases=state.purchases.filter(x=>x.id!==del.dataset.buyDelete);syncPurchases();renderPurchases()}});
+clearBuy();renderPurchases();
+
+['monthFilter','rangeStart','rangeEnd'].forEach(id=>$(id).addEventListener('change',renderAll));$('calculate').addEventListener('click',()=>run(false));$('saveEntry').addEventListener('click',()=>run(true));$('saveSettings').addEventListener('click',()=>{const s=readSettings();if(!validSettings(s)){alert('Έλεγξε τις τιμές αγοράς.');return}state.settings=s;persist();alert('Οι τιμές αγοράς αποθηκεύτηκαν για τις επόμενες μετρήσεις.')});ids.forEach(id=>$(id).addEventListener('input',()=>{if(id==='purchaseKg')$('purchaseBags').value=$('purchaseKg').value===''?'':+(num('purchaseKg')/30).toFixed(6);updatePrice()}));
+$('purchaseBags').addEventListener('input',()=>{$('purchaseKg').value=$('purchaseBags').value===''?'':+(num('purchaseBags')*30).toFixed(6);updatePrice()});
+$('usedKg').addEventListener('input',()=>{$('usedBags').value=$('usedKg').value===''?'':+(num('usedKg')/30).toFixed(6)});
+$('usedBags').addEventListener('input',()=>{$('usedKg').value=$('usedBags').value===''?'':+(num('usedBags')*30).toFixed(6)});$('exportJSON').addEventListener('click',()=>download('pyrina_antigrafo_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({...state,electric:JSON.parse(localStorage.getItem(EKEY)||'null')},null,2),'application/json;charset=utf-8'));$('exportCSV').addEventListener('click',()=>{const cols=['from','stamp','bags','kg','upHours','downHours','upper','lower','price','cost','upKg','downKg','upCost','downCost','notes'];const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';download('pyrina_istoriko.csv','\ufeff'+cols.join(';')+'\n'+state.entries.filter(e=>!e.initial).map(e=>cols.map(k=>q(k==='from'||k==='stamp'?new Date(e[k]).toISOString():e[k])).join(';')).join('\n'),'text/csv;charset=utf-8')});$('importBtn').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',async ev=>{const f=ev.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj.settings||!Array.isArray(obj.entries)||!validSettings(obj.settings)||obj.entries.some((e,i)=>!Number.isFinite(e.stamp)||!Number.isFinite(e.upper)||!Number.isFinite(e.lower)||(i>0&&e.stamp<=obj.entries[i-1].stamp)))throw Error('Μη έγκυρο αντίγραφο');if(!confirm('Να αντικατασταθούν όλες οι υπάρχουσες καταχωρίσεις;'))return;if(obj.electric&&eIds.every(k=>Number.isFinite(obj.electric[k]))){localStorage.setItem(EKEY,JSON.stringify(obj.electric));eIds.forEach(k=>$(k).value=obj.electric[k])}delete obj.electric;state=obj;persist();renderRate();ids.forEach(id=>$(id).value=state.settings[id]);$('purchaseBags').value=+(state.settings.purchaseKg/30).toFixed(6);updatePrice();renderAll();if(!Array.isArray(state.purchases))state.purchases=initialPurchases;if(correctSeasonBaseline(state))persist();syncPurchases();renderPurchases();alert('Το αντίγραφο επανήλθε.')}catch(e){alert('Αποτυχία επαναφοράς: '+e.message)}finally{ev.target.value=''}});$('reset').addEventListener('click',()=>{if(confirm('Θα διαγραφούν όλες οι μετρήσεις και η διαγραφή θα μεταφερθεί στις συνδεδεμένες συσκευές όταν λειτουργεί ο συγχρονισμός. Έχεις κρατήσει αντίγραφο JSON;')){state.entries=[];persist();renderAll();renderPurchases()}});ids.forEach(id=>$(id).value=state.settings[id]);$('purchaseBags').value=+(state.settings.purchaseKg/30).toFixed(6);updatePrice();renderRate();renderAll();
+import('./sync.js').then(({connectSync})=>{
+  notifySync=connectSync({
+    read:()=>JSON.stringify({state,electric:JSON.parse(localStorage.getItem(EKEY)||'null')}),
+    apply:payload=>{
+      const next=JSON.parse(payload);
+      if(!next.state||!validSettings(next.state.settings)||!Array.isArray(next.state.entries)||!Array.isArray(next.state.purchases))throw Error('Invalid data');
+      const corrected=correctSeasonBaseline(next.state);
+      localStorage.setItem(KEY,JSON.stringify(next.state));
+      if(next.electric)localStorage.setItem(EKEY,JSON.stringify(next.electric));
+      else localStorage.removeItem(EKEY);
+      state=next.state;
+      ids.forEach(id=>$(id).value=state.settings[id]);
+      $('purchaseBags').value=+(state.settings.purchaseKg/30).toFixed(6);
+      eIds.forEach(id=>$(id).value=next.electric?.[id]??$(id).defaultValue);
+      clearBuy();updatePrice();renderRate();renderAll();renderPurchases();$('electricResult').textContent='';
+      if(corrected)notifySync();
+    },
+    backup:payload=>{
+      const copy=JSON.parse(payload);
+      download('pyrina_prin_ton_sygchronismo.json',JSON.stringify({...copy.state,electric:copy.electric},null,2),'application/json;charset=utf-8');
+    }
+  });
+}).catch(()=>{$('syncStatus').textContent='Ο συγχρονισμός δεν φορτώθηκε. Οι καταχωρίσεις αποθηκεύονται στη συσκευή.'});
+})();
+</script><script>if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});let installEvent=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;document.getElementById('installPwa').style.display='inline-block'});document.getElementById('installPwa').addEventListener('click',async()=>{if(!installEvent)return;installEvent.prompt();await installEvent.userChoice;installEvent=null;document.getElementById('installPwa').style.display='none'});</script></body></html>
