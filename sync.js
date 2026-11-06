@@ -1,5 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js';
 import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js';
+import {doc, initializeFirestore, onSnapshot, runTransaction} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js';
 
 const app = initializeApp({
   apiKey: 'AIzaSyBl6OnyMUDR0ov9KUxX5rJ0qfE2P_xzpJA',
@@ -8,16 +9,7 @@ const app = initializeApp({
   appId: '1:601244953831:web:93514b1d314b4db97a0642'
 });
 const auth = getAuth(app);
-const endpoint = 'https://firestore.googleapis.com/v1/projects/thermansi-katoikion/databases/(default)/documents/heatingUsers/';
-
-async function request(current, options = {}, query = '') {
-  const token = await current.user.getIdToken();
-  return fetch(endpoint + encodeURIComponent(current.user.uid) + query, {
-    ...options,
-    headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json'},
-    signal: AbortSignal.timeout(12000)
-  });
-}
+const db = initializeFirestore(app, {experimentalForceLongPolling: true});
 
 export function connectSync({read, apply, backup}) {
   const el = id => document.getElementById(id);
@@ -48,36 +40,31 @@ export function connectSync({read, apply, backup}) {
     const key = 'pyrina_sync_base_' + user.uid;
     const current = {
       key,
-      user,
+      ref: doc(db, 'heatingUsers', user.uid),
       base: localStorage.getItem(key),
       remote: undefined,
       busy: false
     };
     session = current;
     show('Έλεγχος κοινών καταχωρίσεων…');
-    async function refresh() {
-      if (session !== current) return;
-      if (!current.busy) {
-        try {
-          const version = current.version;
-          const response = await request(current);
-          if (!response.ok && response.status !== 404) throw Error('Read failed');
-          const data = response.ok ? await response.json() : null;
-          if (session !== current || current.busy || current.version !== version) {
-            if (session === current) current.timer = setTimeout(refresh, 10000);
-            return;
-          }
-          current.version = data?.updateTime;
-          current.remote = data ? data.fields.payload.stringValue : null;
-          reconcile();
-        } catch {
-          if (session === current) show('Η επικοινωνία με το Firebase απέτυχε. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
-        }
+    const timeout = setTimeout(() => {
+      if (session === current && current.remote === undefined) {
+        show('Το Firebase δεν απάντησε. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
       }
-      if (session === current) current.timer = setTimeout(refresh, 10000);
-    }
-    unsubscribe = () => clearTimeout(current.timer);
-    void refresh();
+    }, 15000);
+    const stop = onSnapshot(current.ref, {includeMetadataChanges:true}, snap => {
+      if (session !== current || snap.metadata.fromCache || snap.metadata.hasPendingWrites) return;
+      clearTimeout(timeout);
+      current.remote = snap.exists() ? snap.get('payload') : null;
+      reconcile();
+    }, () => {
+      clearTimeout(timeout);
+      if (session === current) show('Δεν υπάρχει πρόσβαση στις κοινές καταχωρίσεις. Τα δεδομένα μένουν στη συσκευή.', {retry:true});
+    });
+    unsubscribe = () => {
+      clearTimeout(timeout);
+      stop();
+    };
   }
 
   function remember(current, payload) {
@@ -90,23 +77,18 @@ export function connectSync({read, apply, backup}) {
     let success = false;
     show('Αποστολή καταχωρίσεων…');
     try {
-      const condition = expected === null ? 'exists=false' : 'updateTime=' + encodeURIComponent(current.version);
-      const response = await request(current, {
-        method: 'PATCH',
-        body: JSON.stringify({fields: {payload: {stringValue: payload}}})
-      }, '?currentDocument.' + condition);
-      if (!response.ok) throw Error('Write failed');
-      const data = await response.json();
+      await runTransaction(db, async transaction => {
+        if (session !== current) throw Error('Session changed');
+        const latest = await transaction.get(current.ref);
+        if ((latest.exists() ? latest.get('payload') : null) !== expected) throw Error('Remote changed');
+        transaction.set(current.ref, {payload});
+      });
       if (session !== current) return;
-      current.version = data.updateTime;
-      current.remote = payload;
+      if (current.remote === expected) current.remote = payload;
       remember(current, payload);
       success = true;
     } catch {
-      if (session === current) {
-        current.remote = undefined;
-        show('Η αποστολή εκκρεμεί. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
-      }
+      if (session === current) show('Η αποστολή εκκρεμεί. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
     } finally {
       current.busy = false;
     }
@@ -117,12 +99,12 @@ export function connectSync({read, apply, backup}) {
     const current = session;
     if (!current || current.busy || current.remote === undefined) return;
     const {remote, base} = current;
-    const local = read();
     if (!navigator.onLine) {
       show('Εκτός σύνδεσης. Οι αλλαγές φυλάσσονται στη συσκευή.');
       return;
     }
     try {
+      const local = read();
       if (remote === local) {
         remember(current, local);
         show('Οι καταχωρίσεις έχουν συγχρονιστεί.');
