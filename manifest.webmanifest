@@ -1,0 +1,19 @@
+{
+  "name": "Θέρμανση Κατοικιών | Υπολογιστής Πυρήνας",
+  "short_name": "Θέρμανση",
+  "description": "Κατανάλωση πυρήνας και κατανομή κόστους για δύο κατοικίες",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#146b60",
+  "lang": "el",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
