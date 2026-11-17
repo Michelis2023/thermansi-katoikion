@@ -26,7 +26,10 @@
 <section class="card" id="electricTariff"><h2>Τιμή ρεύματος ΔΕΗ Γ1 ανά μήνα</h2>
 <div class="grid"><label class="field">Μήνας χρέωσης<input id="rateMonth" type="month"></label><label class="field">Τιμή προμήθειας (€/kWh)<input id="electricRate" type="text" inputmode="decimal" placeholder="π.χ. 0,16901"></label></div>
 <p id="rateDetails" class="muted"></p><div class="actions"><button id="rateSave" class="secondary">Αποθήκευση τιμής μήνα</button></div><p id="rateStatus" role="status"></p></section>
-<section class="card" id="electric"><h2>Ρεύμα κυκλοφορητών</h2><p class="muted">Ο υπολογισμός βασίζεται στις ώρες λειτουργίας των ωρομετρητών και στην ονομαστική ισχύ κάθε κυκλοφορητή. Για περιόδους που καλύπτουν δύο μήνες, οι ώρες μοιράζονται αναλογικά. Η πραγματική ηλεκτρική κατανάλωση εξαρτάται από την ισχύ λειτουργίας.</p><div class="grid"><div class="stat">Πάνω κατοικία<strong>220 W</strong>Κόκκινος κυκλοφορητής, 2η ταχύτητα</div><div class="stat">Κάτω κατοικία<strong>72 W</strong>Πράσινος κυκλοφορητής, 2η ταχύτητα</div></div><h3>Κατανάλωση και κόστος ανά κατοικία</h3><div id="homeElectricSummary" class="grid"></div></section>
+<section class="card" id="electric"><h2>Ρεύμα κυκλοφορητών</h2><p class="muted">Ο υπολογισμός βασίζεται στις ώρες λειτουργίας των ωρομετρητών και στην ονομαστική ισχύ κάθε κυκλοφορητή. Για περιόδους που καλύπτουν δύο μήνες, οι ώρες μοιράζονται αναλογικά. Η πραγματική ηλεκτρική κατανάλωση εξαρτάται από την ισχύ λειτουργίας.</p><div class="grid">
+<label class="field">Πάνω κατοικία · κόκκινος GRUNDFOS UPS 32-80 180<select id="upPumpSpeed"><option value="1">1η · 145 W</option><option value="2">2η · 220 W</option><option value="3">3η · 245 W</option></select><strong id="upPumpWatts">220 W</strong></label>
+<label class="field">Κάτω κατοικία · πράσινος WILO RS 30/70r<select id="downPumpSpeed"><option value="1">1η · 54 W</option><option value="2">2η · 72 W</option><option value="3">3η · 93 W</option><option value="4">4η · 113 W</option></select><strong id="downPumpWatts">93 W</strong></label>
+</div><p class="muted">Η αλλαγή ταχύτητας αφορά τις επόμενες ώρες λειτουργίας. Τα παλαιότερα διαστήματα διατηρούν την προηγούμενη ισχύ.</p><div class="grid"><label class="field">Ημερομηνία και ώρα ισχύος<input id="pumpChangeAt" type="datetime-local"></label><div class="actions"><button id="savePumpSpeeds" class="secondary">Αποθήκευση ταχυτήτων</button></div></div><p id="pumpSpeedStatus" role="status"></p><div id="pumpSpeedHistory" class="muted"></div><h3>Κατανάλωση και κόστος ανά κατοικία</h3><div id="homeElectricSummary" class="grid"></div></section>
 
 <footer class="muted">Οι ώρες και η κατανάλωση πρέπει να καλύπτουν ακριβώς το ίδιο χρονικό διάστημα. Το καύσιμο συντήρησης της φλόγας περιλαμβάνεται στη συνολική κατανάλωση και δεν χρεώνεται δεύτερη φορά.</footer></main>
 <script>
@@ -82,7 +85,7 @@ function summaryRange(){
   const hours=Number(selection);
   return between(now.getTime()-hours*3600000,now.getTime()+1);
 }
-function renderAll(){renderForm();const rows=state.entries.filter(e=>!e.initial);
+function renderAll(){renderPumpSpeeds();renderForm();const rows=state.entries.filter(e=>!e.initial);
 const currentMonth=monthKey(Date.now());
 const months=[...new Set([currentMonth,...state.entries.map(e=>monthKey(e.stamp)),...Object.keys(monthlyPumpHours(rows))])].sort().reverse();
 const selector=$('monthFilter'),selected=selector.value;
@@ -170,6 +173,73 @@ $('rateSave').addEventListener('click',()=>{
   state.electricRates={...state.electricRates,[month]:rate};
   persist();renderRate();renderAll();
 });
+const PUMP_WATTS={up:{1:145,2:220,3:245},down:{1:54,2:72,3:93,4:113}};
+const PUMP_CHANGE_2026=new Date('2026-11-16T17:30:00+02:00').getTime();
+const DEFAULT_PUMP_CHANGES=[
+ {stamp:0,up:2,down:2},
+ {stamp:PUMP_CHANGE_2026,up:2,down:3}
+];
+function pumpChanges(){
+ const changes=Array.isArray(state.pumpChanges)?state.pumpChanges:DEFAULT_PUMP_CHANGES;
+ return changes.filter(c=>Number.isFinite(c.stamp)&&PUMP_WATTS.up[c.up]&&PUMP_WATTS.down[c.down]).sort((a,b)=>a.stamp-b.stamp);
+}
+function speedAt(stamp){
+ let current={up:2,down:2};
+ for(const change of pumpChanges()){if(change.stamp>stamp)break;current=change}
+ return current;
+}
+function renderPumpSpeeds(){
+ const current=speedAt(Date.now());
+ $('upPumpSpeed').value=current.up;
+ $('downPumpSpeed').value=current.down;
+ $('upPumpWatts').textContent=PUMP_WATTS.up[current.up]+' W';
+ $('downPumpWatts').textContent=PUMP_WATTS.down[current.down]+' W';
+ const history=pumpChanges().filter(c=>c.stamp>0);
+ $('pumpSpeedHistory').textContent='Ιστορικό: '+history.map(c=>timeLabel(c.stamp)+' · πάνω '+c.up+'η ('+PUMP_WATTS.up[c.up]+' W), κάτω '+c.down+'η ('+PUMP_WATTS.down[c.down]+' W)').join(' | ');
+}
+$('pumpChangeAt').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+for(const side of ['up','down']){
+ const id=side==='up'?'upPumpSpeed':'downPumpSpeed';
+ $(id).addEventListener('change',()=>{
+   $('upPumpWatts').textContent=PUMP_WATTS.up[$('upPumpSpeed').value]+' W';
+   $('downPumpWatts').textContent=PUMP_WATTS.down[$('downPumpSpeed').value]+' W';
+ });
+}
+$('savePumpSpeeds').addEventListener('click',()=>{
+ const stamp=new Date($('pumpChangeAt').value).getTime();
+ const up=Number($('upPumpSpeed').value),down=Number($('downPumpSpeed').value);
+ if(!Number.isFinite(stamp)||!PUMP_WATTS.up[up]||!PUMP_WATTS.down[down]){
+   $('pumpSpeedStatus').textContent='Έλεγξε την ημερομηνία και τις ταχύτητες.';return;
+ }
+ const changes=pumpChanges().filter(c=>c.stamp!==stamp);
+ changes.push({stamp,up,down});
+ state.pumpChanges=changes.sort((a,b)=>a.stamp-b.stamp);
+ persist();renderAll();
+ $('pumpSpeedStatus').textContent='Οι ταχύτητες αποθηκεύτηκαν. Τα Watt ενημερώθηκαν.';
+});
+function monthlyPumpElectric(entries){
+ const months={};
+ for(const entry of entries){
+   const start=Number.isFinite(entry.from)&&entry.from<entry.stamp?entry.from:entry.stamp;
+   if(start===entry.stamp)continue;
+   let cursor=start;
+   while(cursor<entry.stamp){
+     const date=new Date(cursor);
+     const nextMonth=new Date(date.getFullYear(),date.getMonth()+1,1).getTime();
+     const nextChange=pumpChanges().find(c=>c.stamp>cursor)?.stamp??Infinity;
+     const end=Math.min(entry.stamp,nextMonth,nextChange);
+     if(end<=cursor)break;
+     const share=(end-cursor)/(entry.stamp-start);
+     const month=monthKey(cursor);
+     const speed=speedAt(cursor);
+     const h=months[month]??={up:0,down:0};
+     h.up+=(entry.upHours||0)*share*PUMP_WATTS.up[speed.up]/1000;
+     h.down+=(entry.downHours||0)*share*PUMP_WATTS.down[speed.down]/1000;
+     cursor=end;
+   }
+ }
+ return months;
+}
 function monthlyPumpHours(entries){
   const months={};
   for(const entry of entries){
@@ -213,12 +283,12 @@ function renderCombinedSummary(selectedRows){
     values.up.kg+=e.upKg||0;values.down.kg+=e.downKg||0;
     values.up.fuel+=e.upCost||0;values.down.fuel+=e.downCost||0;
   }
-  const months=monthlyPumpHours(selectedRows);
+  const months=monthlyPumpElectric(selectedRows);
   for(const [month,h] of Object.entries(months)){
     const rate=monthlyRate(month);
-    values.up.kwh+=h.up*.220;values.down.kwh+=h.down*.072;
+    values.up.kwh+=h.up;values.down.kwh+=h.down;
     if(rate===undefined)unknownElectric=true;
-    else{values.up.electric+=h.up*.220*rate;values.down.electric+=h.down*.072*rate}
+    else{values.up.electric+=h.up*rate;values.down.electric+=h.down*rate}
   }
   const total={kg:values.up.kg+values.down.kg,fuel:values.up.fuel+values.down.fuel,kwh:values.up.kwh+values.down.kwh,electric:values.up.electric+values.down.electric};
   const card=(label,v)=>'<div class="stat">'+label+'<strong>'+fmt(v.kg)+' kg πυρήνα</strong>'
@@ -233,14 +303,14 @@ function renderHomeElectricSummary(){
   const rows=state.entries.filter(e=>!e.initial);
   const range=summaryRange(),selection=$('monthFilter').value;
   const chosen=rows.filter(e=>range.includes(e));
-  const months=monthlyPumpHours(chosen);
+  const months=monthlyPumpElectric(chosen);
   const totals={up:0,down:0,upCost:0,downCost:0};
   let missing=false;
   for(const [month,h] of Object.entries(months)){
     const rate=monthlyRate(month);
-    totals.up+=h.up*.220;totals.down+=h.down*.072;
+    totals.up+=h.up;totals.down+=h.down;
     if(rate===undefined){missing=true;continue}
-    totals.upCost+=h.up*.220*rate;totals.downCost+=h.down*.072*rate;
+    totals.upCost+=h.up*rate;totals.downCost+=h.down*rate;
   }
   const card=(label,kwh,cost)=>'<div class="stat">'+label+'<strong>'+fmt(kwh)+' kWh</strong>'+(missing?'Εκκρεμεί τιμή ρεύματος μήνα':fmt(cost)+' €')+'</div>';
   const note=!chosen.length?'Δεν υπάρχουν νέες ολοκληρωμένες περίοδοι για το επιλεγμένο διάστημα. Η αρχική περίοδος δεν έχει ακριβείς ώρες κυκλοφορητών.':'Υπολογισμός για '+chosen.length+' ολοκληρωμένες περιόδους.';
