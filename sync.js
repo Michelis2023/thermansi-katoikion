@@ -1,6 +1,7 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js';
 import {getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js';
 import {doc, initializeFirestore, onSnapshot, runTransaction} from 'https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js';
+import {mergePayloads} from './merge-sync.js?v=26';
 
 const app = initializeApp({
   apiKey: 'AIzaSyBl6OnyMUDR0ov9KUxX5rJ0qfE2P_xzpJA',
@@ -11,7 +12,7 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = initializeFirestore(app, {experimentalForceLongPolling: true});
 
-export function connectSync({read, apply, backup}) {
+export function connectSync({read, apply, backup, isPristine}) {
   const el = id => document.getElementById(id);
   const login = el('syncLogin');
   const logout = el('syncLogout');
@@ -75,12 +76,18 @@ export function connectSync({read, apply, backup}) {
   async function write(current, expected, payload) {
     current.busy = true;
     let success = false;
+    let changed = false;
     show('Αποστολή καταχωρίσεων…');
     try {
       await runTransaction(db, async transaction => {
         if (session !== current) throw Error('Session changed');
         const latest = await transaction.get(current.ref);
-        if ((latest.exists() ? latest.get('payload') : null) !== expected) throw Error('Remote changed');
+        const actual = latest.exists() ? latest.get('payload') : null;
+        if (actual !== expected) {
+          if (current.remote === expected) current.remote = actual;
+          changed = true;
+          throw Error('Remote changed');
+        }
         transaction.set(current.ref, {payload});
       });
       if (session !== current) return;
@@ -88,11 +95,11 @@ export function connectSync({read, apply, backup}) {
       remember(current, payload);
       success = true;
     } catch {
-      if (session === current) show('Η αποστολή εκκρεμεί. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
+      if (session === current && !changed) show('Η αποστολή εκκρεμεί. Οι αλλαγές φυλάσσονται στη συσκευή.', {retry:true});
     } finally {
       current.busy = false;
     }
-    if (success) reconcile();
+    if (success || changed) reconcile();
   }
 
   function reconcile() {
@@ -110,12 +117,23 @@ export function connectSync({read, apply, backup}) {
         show('Οι καταχωρίσεις έχουν συγχρονιστεί.');
       } else if (remote === null || remote === base) {
         void write(current, remote, local);
-      } else if (base !== null && local === base) {
+      } else if (local === base || (base === null && isPristine(local))) {
         apply(remote);
         remember(current, remote);
         show('Οι κοινές καταχωρίσεις ενημερώθηκαν.');
       } else {
-        show('Η συσκευή και το Firebase έχουν διαφορετικές καταχωρίσεις. Επίλεξε ποιο σύνολο θέλεις να κρατήσεις. Θα ληφθεί αντίγραφο του άλλου συνόλου.', {conflict:true});
+        const merged = base === null ? null : mergePayloads(base, local, remote);
+        if (merged === null) {
+          show('Υπάρχουν αντικρουόμενες αλλαγές. Διάλεξε ποιο ιστορικό θα κρατήσεις. Το άλλο θα αποθηκευτεί σε αντίγραφο.', {conflict:true});
+          return;
+        }
+        apply(merged);
+        if (merged === remote) {
+          remember(current, remote);
+          show('Οι καταχωρίσεις έχουν συγχρονιστεί.');
+        } else {
+          void write(current, remote, read());
+        }
       }
     } catch {
       show('Η ενημέρωση δεν ολοκληρώθηκε. Έλεγξε τις καταχωρίσεις και δοκίμασε ξανά.', {retry:true});
