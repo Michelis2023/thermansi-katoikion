@@ -1,4 +1,4 @@
-const CACHE='thermansi-v26';
+const CACHE='thermansi-v27';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./sync.js?v=26','./merge-sync.js?v=26'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('thermansi-v')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
